@@ -4,6 +4,7 @@ import com.ty.spark.util.HttpHelper;
 import com.ty.spark.util.RequestURLBuilder;
 
 public class DataService {
+	//提供获取数据，组装json的服务
 	public String getJsonArray(String devid, String type, String beginTime,
 			String endTime) {
 		//从接口地址去获取json数据
