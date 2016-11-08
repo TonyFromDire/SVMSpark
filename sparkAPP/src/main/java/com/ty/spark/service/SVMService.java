@@ -5,6 +5,7 @@ import scala.Tuple2;
 import com.ty.spark.domain.Parameter;
 
 public class SVMService {
+	//https://github.com/TonyFromDire/SVMSpark.git
 	public double trainAndPridictByParameter(Parameter parameter) {
 		return 0;
 	}

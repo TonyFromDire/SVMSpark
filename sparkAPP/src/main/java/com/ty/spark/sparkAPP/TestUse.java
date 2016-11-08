@@ -15,6 +15,7 @@ import scala.Function;
 import scala.Tuple2;
 
 public class TestUse {
+	// a wordCount DEMO
 	public static void main(String[] args) {
 		SparkConf conf = new SparkConf().setAppName(
 				"Spark WordCount written by java").setMaster("local");
