@@ -10,7 +10,7 @@ public class SVMService {
 	}
 	private void mian() {
 		// TODO Auto-generated method stub
-		Tuple2<String, Integer> tuple2=new Tuple2<String, Integer>("wordd", 1);
+		Tuple2<String, Integer> tuple2=new Tuple2<String, Integer>("wod", 1);
 		
 	}
 
