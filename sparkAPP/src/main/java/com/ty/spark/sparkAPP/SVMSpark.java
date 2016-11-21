@@ -24,6 +24,7 @@ import com.ty.spark.service.ParameterService;
 import scala.Tuple2;
 
 public class SVMSpark implements Serializable{
+	//https://github.com/TonyFromDire/SVMSpark.git
 
 	public static void main(String[] args) {
 		SVMSpark svmSpark=new SVMSpark();
