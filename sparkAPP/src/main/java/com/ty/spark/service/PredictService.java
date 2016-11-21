@@ -4,23 +4,31 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import libsvm.svm;
 import libsvm.svm_model;
+
+import org.apache.hadoop.hive.ql.parse.HiveParser_FromClauseParser.tableAlias_return;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import com.ty.spark.builder.SVMNodeAndLableBuilder;
 import com.ty.spark.builder.SVMParamBuilder;
 import com.ty.spark.builder.SVMPredictor;
 import com.ty.spark.builder.SVMProblemBuilder;
 import com.ty.spark.builder.SVMTrainer;
+import com.ty.spark.domain.DataPoint;
+import com.ty.spark.domain.Parameter;
+import com.ty.spark.domain.TrainResult;
 import com.ty.spark.util.HttpHelper;
 import com.ty.spark.util.RequestURLBuilder;
 
 public class PredictService {
-	public String getJsonArray(String devid, String type, String beginTime,
-			String endTime) {
+	public static String getJsonArray(String devid, String type,
+			String beginTime, String endTime) {
 		RequestURLBuilder requestURLBuilder = new RequestURLBuilder(devid,
 				type, beginTime, endTime);
 		String urlString = requestURLBuilder.getURL();
@@ -194,9 +202,12 @@ public class PredictService {
 		String jsonArrayStringB = predictService.getJsonArray("1800002459",
 				"p", "2015-06-08 00:00:00", "2015-06-13 00:00:00");
 		System.out.println(jsonArrayStringB);
+		//
 		String jsonArrayStringH1 = predictService.getJsonArray("1800002459",
 				"p", "2015-06-01 00:00:00", "2015-06-06 00:00:00");
 		System.out.println(jsonArrayStringH1);// last week
+		
+		
 		String jsonArrayStringH2 = predictService.getJsonArray("1800002459",
 				"p", "2015-06-07 00:00:00", "2015-06-12 00:00:00");
 		System.out.println(jsonArrayStringH2);// yesterday
@@ -372,28 +383,39 @@ public class PredictService {
 		// 写回数据库
 	}
 
-	public static void main(String[] args) {
-		PredictService predictService = new PredictService();
-		String jsonArrayStringB = predictService.getJsonArray("1800002459",
+	
+	//做出拆分解耦合
+	
+	public TrainResult predictWithTHB(Parameter parameter) {
+		//通过dataService获取数据
+		DataService dataService=new DataService();
+		String jsonArrayStringB = dataService.getJsonArray("1800002459",
 				"p", "2015-06-09 00:00:00", "2015-06-11 00:00:00");
 		System.out.println(jsonArrayStringB);
-		String jsonArrayStringT = predictService.getJsonArray("1800002459",
+		
+		String jsonArrayStringT = dataService.getJsonArray("1800002459",
 				"t", "2015-06-09 00:00:00", "2015-06-11 00:00:00");
 		System.out.println(jsonArrayStringT);
-		String jsonArrayStringH1 = predictService.getJsonArray("1800002459",
+		
+		String jsonArrayStringH1 = dataService.getJsonArray("1800002459",
 				"p", "2015-06-02 00:00:00", "2015-06-05 00:00:00");
 		System.out.println(jsonArrayStringH1);// last week
-		String jsonArrayStringH2 = predictService.getJsonArray("1800002459",
+		
+		String jsonArrayStringH2 = dataService.getJsonArray("1800002459",
 				"p", "2015-06-08 00:00:00", "2015-06-10 00:00:00");
 		System.out.println(jsonArrayStringH2);// yesterday
+		
 		// 构造nodes和lable
 		SVMNodeAndLableBuilder svmNodeAndLableBuilder = new SVMNodeAndLableBuilder(
 				jsonArrayStringB, jsonArrayStringT, jsonArrayStringH1,
 				jsonArrayStringH2);
+		//构造问题
 		SVMProblemBuilder svmProblemBuilder = new SVMProblemBuilder(
 				svmNodeAndLableBuilder.getNodeSet(),
 				svmNodeAndLableBuilder.getLabel());
-		SVMParamBuilder svmParamBuilder = new SVMParamBuilder();
+		//设置参数
+		SVMParamBuilder svmParamBuilder = new SVMParamBuilder(parameter.getC(),
+				parameter.getGamma());
 		SVMTrainer svmTrainer = new SVMTrainer(svmProblemBuilder.getProblem(),
 				svmParamBuilder.getParam());
 		// 训练获取模型
@@ -405,22 +427,24 @@ public class PredictService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// 预测
+		// 开始预测
 		SVMPredictor svmPredictor = new SVMPredictor(svmModel);
-		String jsonArrayStringBtest = predictService.getJsonArray("1800002459",
+		String jsonArrayStringBtest = dataService.getJsonArray("1800002459",
 				"p", "2015-06-11 00:00:00", "2015-06-11 12:00:00");
 		System.out.println(jsonArrayStringBtest);
-		String jsonArrayStringTtest = predictService.getJsonArray("1800002459",
+		String jsonArrayStringTtest = dataService.getJsonArray("1800002459",
 				"t", "2015-06-11 00:00:00", "2015-06-12 11:00:00");
 		System.out.println(jsonArrayStringTtest);
-		String jsonArrayStringH1test = predictService
+		String jsonArrayStringH1test = dataService
 				.getJsonArray("1800002459", "p", "2015-06-04 00:00:00",
 						"2015-06-04 12:00:00");
 		System.out.println(jsonArrayStringH1test);
-		String jsonArrayStringH2test = predictService
+		String jsonArrayStringH2test = dataService
 				.getJsonArray("1800002459", "p", "2015-06-10 00:00:00",
 						"2015-06-10 12:00:00");
 		System.out.println(jsonArrayStringH2test);
+		
+		//构造用于预测的向量数据
 		SVMNodeAndLableBuilder svmNodeAndLableBuilderTest = new SVMNodeAndLableBuilder(
 				jsonArrayStringBtest, jsonArrayStringTtest,
 				jsonArrayStringH1test, jsonArrayStringH2test);
@@ -428,13 +452,18 @@ public class PredictService {
 		System.out.println("总数：" + ALLCOUNT);
 		int Ecount = ALLCOUNT;
 		int ERROR = 0;
+		//定义5%的阈值来决定是否不合格，误差过大
 		double rule = 0.05;
 		BigDecimal ruleBigDecimal = new BigDecimal(rule);
 		double half = 0.99;
 		BigDecimal halfBigDecimal = new BigDecimal(half);
 		double Emre = 0;// 平均相对误差
 		double Ermse = 0;// 均方根相对误差
+
+		List<DataPoint> resultDataPointList = new ArrayList<DataPoint>();
+
 		for (int i = 0; i < svmNodeAndLableBuilderTest.getLabel().size(); i++) {
+
 			double truevalue = svmNodeAndLableBuilderTest.getLabel().get(i);
 			System.out.print("真值:" + truevalue + " ");
 			double predictValue = svmPredictor
@@ -448,6 +477,7 @@ public class PredictService {
 				ERROR++;
 			}
 			// 做统计时舍去突变点，突然从180到8，有异常的点,误差大于99%的点,舍去为了好计算Emre，和Ermse
+			//以免因为误差太大的突变点影响了计算Emre，和Ermse
 			if (EsingleBigDecimal.compareTo(halfBigDecimal) == 1) {
 				Ecount--;
 			} else {
@@ -455,8 +485,13 @@ public class PredictService {
 				Ermse += Math.pow(Esingle, 2);
 			}
 
+			DataPoint dataPoint = new DataPoint(truevalue, predictValue,
+					Esingle * 100);
+			resultDataPointList.add(dataPoint);
+
 			System.out.println(Esingle + "---误差百分比:" + Esingle * 100 + "%|"
 					+ Math.abs(truevalue - predictValue) + "/" + truevalue);
+
 		}
 		Ermse = Math.sqrt(Ermse / Ecount);
 		System.out.println("Error：" + ERROR);
@@ -464,7 +499,21 @@ public class PredictService {
 		System.out.println("Emre：" + Emre / Ecount);
 		System.out.println("合格率r："
 				+ (1.0 - ((double) ERROR / (double) ALLCOUNT)));
-		// 写回数据库
+		
+		return dataService.getTrainResult(ALLCOUNT, ERROR, (1.0 - ((double) ERROR / (double) ALLCOUNT)), parameter, resultDataPointList, Ermse, Emre / Ecount);
+		
+
+	}
+
+
+
+	public static void main(String[] args) {
+		//一次测试
+		double C = 100;
+		double gamma = 0.000001;
+		Parameter parameter = new Parameter(C, gamma);
+		PredictService predictService=new PredictService();
+		predictService.predictWithTHB(parameter);
 	}
 
 }
