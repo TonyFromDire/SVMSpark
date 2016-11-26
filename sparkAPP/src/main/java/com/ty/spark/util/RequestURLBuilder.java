@@ -6,7 +6,7 @@ public class RequestURLBuilder {
 	private String type;
 	private String beginTime;
 	private String endTime;
-
+	private String URL;
 	public RequestURLBuilder(String devid, String type, String beginTime,
 			String endTime) {
 		this.devid = devid;
@@ -31,7 +31,7 @@ public class RequestURLBuilder {
 		URL = uRL;
 	}
 
-	private String URL;
+
 
 }
 

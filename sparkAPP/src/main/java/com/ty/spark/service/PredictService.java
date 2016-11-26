@@ -384,7 +384,7 @@ public class PredictService {
 	}
 
 	
-	//做出拆分解耦合
+	//做出拆分解耦合 分模块，主要用这个函数，最后是最规范的
 	
 	public TrainResult predictWithTHB(Parameter parameter) {
 		//通过dataService获取数据
@@ -427,7 +427,7 @@ public class PredictService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// 开始预测
+		// 开始预测 需要手动修改代码来修改时间 
 		SVMPredictor svmPredictor = new SVMPredictor(svmModel);
 		String jsonArrayStringBtest = dataService.getJsonArray("1800002459",
 				"p", "2015-06-11 00:00:00", "2015-06-11 12:00:00");
@@ -499,8 +499,9 @@ public class PredictService {
 		System.out.println("Emre：" + Emre / Ecount);
 		System.out.println("合格率r："
 				+ (1.0 - ((double) ERROR / (double) ALLCOUNT)));
+		ResultDataService resultDataService =new ResultDataService();
 		
-		return dataService.getTrainResult(ALLCOUNT, ERROR, (1.0 - ((double) ERROR / (double) ALLCOUNT)), parameter, resultDataPointList, Ermse, Emre / Ecount);
+		return resultDataService.getTrainResult(ALLCOUNT, ERROR, (1.0 - ((double) ERROR / (double) ALLCOUNT)), parameter, resultDataPointList, Ermse, Emre / Ecount);
 		
 
 	}
