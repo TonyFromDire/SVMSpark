@@ -1,5 +1,7 @@
 package com.ty.spark.builder;
 
+import java.io.IOException;
+
 import libsvm.svm;
 import libsvm.svm_model;
 import libsvm.svm_parameter;
@@ -38,6 +40,9 @@ public class SVMTrainer {
 
 	public void setSvm_parameter(svm_parameter svm_parameter) {
 		this.svm_parameter = svm_parameter;
+	}
+	public void saveModel(String modleName,svm_model svm_model) throws IOException {
+		svm.svm_save_model(modleName, svm_model);
 	}
 
 }

@@ -12,6 +12,7 @@ import com.ty.spark.domain.Parameter;
 import com.ty.spark.domain.TrainResult;
 
 public class ResultDataService {
+	
 	//一次训练预测后的，返回整体的结果情况，存在一个对象中
 	public TrainResult getTrainResult(int total, int error, Double rate,
 			Parameter parameter, List<DataPoint> dataList, Double Ermse,
